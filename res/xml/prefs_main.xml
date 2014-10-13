@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <EditTextPreference android:title="Text Preference 1" android:key="textPref1"/>
+    <EditTextPreference android:summary='Number after "?user="' android:title="Unique Timetable ID" android:key="userID"/>
+    <CheckBoxPreference android:title="Check1" android:key="check1_temp"/>
+    <PreferenceCategory android:title="Category1" android:summary="this is a category" android:key="prefCat1">
+        <EditTextPreference android:title="Child EditText" android:key="cat1_edittext" android:summary="something"/>
+    </PreferenceCategory>
+    
+
+</PreferenceScreen>
