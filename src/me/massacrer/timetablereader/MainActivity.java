@@ -23,6 +23,8 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -37,6 +39,8 @@ import android.view.ViewTreeObserver;
 import android.view.View.OnClickListener;
 import android.view.View.OnLayoutChangeListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -98,9 +102,12 @@ public class MainActivity extends Activity
 			@Override
 			public void onClick(View v)
 			{
-				//TODO: use an actual url from settings
+				SharedPreferences prefs =
+						PreferenceManager
+								.getDefaultSharedPreferences(MainActivity.this);
+				String userUrl = prefs.getString("userUrl", "");
 				MainActivity.this.refreshEventsList(MainActivity.this
-						.tempMakeURL());
+						.makeURL(userUrl));
 			}
 		});
 	}
@@ -113,8 +120,8 @@ public class MainActivity extends Activity
 						LayoutParams.MATCH_PARENT);
 		rlp.addRule(RelativeLayout.BELOW, R.id.lastSync);
 		listView.setLayoutParams(rlp);
-		listView.setAdapter(new TimetableArrayAdapter(this, eventManager
-				.getAllEventsByDay()));
+		listView.setAdapter(new TimetableArrayAdapter(this));
+		updateAdapter();
 		((ViewGroup) findViewById(R.id.root)).addView(listView);
 	}
 	
@@ -122,7 +129,7 @@ public class MainActivity extends Activity
 	{
 		if (eventManager == null)
 		{
-			eventManager = new EventManager(new ArrayList<VEvent>());
+			eventManager = new EventManager();
 		}
 		try
 		{
@@ -140,6 +147,8 @@ public class MainActivity extends Activity
 		}
 		catch (IOException e)
 		{
+			//DEBUG
+			e.printStackTrace();
 			this.deleteFile(FILE_NAME);
 		}
 		catch (ClassNotFoundException e)
@@ -176,7 +185,8 @@ public class MainActivity extends Activity
 	private void updateSyncText()
 	{
 		((TextView) findViewById(R.id.lastSyncText)).setText("Last fetched: "
-				+ (lastSync == null ? "never" : lastSync.toString()));
+				+ (lastSync == null ? "(not found, resync)" : lastSync
+						.toString()));
 	}
 	
 	/**
@@ -200,7 +210,8 @@ public class MainActivity extends Activity
 		TimetableArrayAdapter adapter =
 				((TimetableArrayAdapter) listView.getAdapter());
 		
-		adapter.update(eventManager.getAllEventsByDay());
+		adapter.update(eventManager
+		/*.getWeek(new Date()));*/.getAllEventsByDay());
 	}
 	
 	private void refreshEventsList(URL url)
@@ -210,11 +221,11 @@ public class MainActivity extends Activity
 		nt.start();
 	}
 	
-	private URL tempMakeURL()
+	private URL makeURL(String extension)
 	{
 		try
 		{
-			return new URL(this.URL_BASE + this.TEST_UID);
+			return new URL(this.URL_BASE + /*this.TEST_UID*/extension);
 		}
 		catch (MalformedURLException e)
 		{
@@ -333,6 +344,7 @@ public class MainActivity extends Activity
 	{
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
+		menu.add("refresh");
 		return true;
 	}
 	
@@ -350,42 +362,89 @@ public class MainActivity extends Activity
 			MainActivity.this.startActivity(settingsIntent);
 			return true;
 		}
+		if (item.getTitle() == "refresh")
+		{
+			View root = findViewById(R.id.root);
+			root.invalidate();
+			root.requestLayout();
+			Toast.makeText(this, "refreshed", Toast.LENGTH_SHORT).show();
+			return true;
+		}
 		return super.onOptionsItemSelected(item);
 	}
 	
 	static class ColouredBoxView extends View
 	{
-		private Random random = new Random();
+		// private Random random = new Random();
 		private static TextPaint paint = new TextPaint();
-		private int width, hour;
+		private int width = 50, hour;
 		// private String text;
 		private int colour;
+		static LinearLayout.LayoutParams layoutParams =
+				new LinearLayout.LayoutParams(/*LayoutParams.WRAP_CONTENT*/0,
+						LayoutParams.WRAP_CONTENT, 1);
+		private static ShapeDrawable border;
 		
-		ColouredBoxView(Context context, int width, int hour, /* String text, */
-				int colour)
+		ColouredBoxView(Context context, int hour)
 		{
 			super(context);
-			this.width = width;
 			this.hour = hour;
-			// this.text = text;
-			this.colour = colour;
+			//this.colour = 0x0;
 			
 			paint.setTextSize(context.getResources().getDimensionPixelSize(
 					R.dimen.text_size));
 			paint.setTextAlign(Align.LEFT);
 			paint.setStyle(Style.FILL);
 			paint.setStrokeWidth(10f);
+			
+			//this.setBackgroundColor(colour);
+			
+			this.setLayoutParams(layoutParams);
+		}
+		
+		public void setSize(int size)
+		{
+			this.width = size;
+		}
+		
+		public void setColour(int colour)
+		{
+			this.colour = colour;
 		}
 		
 		@Override
 		protected void onMeasure(int w, int h)
 		{
-			this.setMeasuredDimension(width, width);
+			//DEBUG:
+			Log.i("TR", "onMeasure: " + MeasureSpec.getMode(w) + ": "
+					+ MeasureSpec.getSize(w) + ":" + MeasureSpec.getSize(h));
+			
+			switch (MeasureSpec.getMode(w))
+			{
+				case 0://MeasureSpec.UNSPECIFIED: // case error...
+				{
+					setMeasuredDimension(width, width);
+					break;
+				}
+				case MeasureSpec.AT_MOST:
+				case MeasureSpec.EXACTLY:
+				{
+					int result = MeasureSpec.getSize(w);
+					setMeasuredDimension(result, result);
+					break;
+				}
+			}
+			return;
+			// Log.i("TR", "onMeasure(" + w + ", " + h);
+			// this.setMeasuredDimension(width, width);
 		}
 		
 		@Override
 		protected void onDraw(Canvas canvas)
 		{
+			int width = this.getWidth();
+			int height = this.getHeight();
+			
 			// int colour = random.nextInt();
 			// colour |= 0xff000000;
 			paint.setColor(colour);
@@ -396,66 +455,41 @@ public class MainActivity extends Activity
 			// top
 			canvas.drawLine(0, 0, width, 0, paint);
 			// left
-			canvas.drawLine(0, 0, 0, width, paint);
+			canvas.drawLine(0, 0, 0, height, paint);
 			// right
 			if (hour == MainActivity.LAST_HOUR)
-				canvas.drawLine(width, 0, width, width, paint);
+				canvas.drawLine(width, 0, width, height, paint);
 			// bottom
-			canvas.drawLine(0, width, width, width, paint);
+			canvas.drawLine(0, height, width, height, paint);
 			// canvas.drawText(text, 0, width / 2, paint);
 		}
 		
-		//TODO: add arguments and impl to allow specification of which boxes
-		// to colour in, what colours to use etc
 		static void setupBoxes(final Context context,
-				final ViewGroup colouredBoxHolder, final Day day)
+				final ViewGroup colouredBoxHolder)
 		{
 			
-			/*colouredBoxHolder.getViewTreeObserver().addOnGlobalLayoutListener(
-					new ViewTreeObserver.OnGlobalLayoutListener()
-					{
-						@Override
-						public void onGlobalLayout()
-						{
-							final int HOURS_IN_DAY = LAST_HOUR - FIRST_HOUR;
-							int width =
-									colouredBoxHolder.getWidth()
-											/ (HOURS_IN_DAY + 1);
-							ColouredBoxView.layoutBoxes(context,
-									colouredBoxHolder, day, width);
-							colouredBoxHolder.getViewTreeObserver()
-									.removeGlobalOnLayoutListener(this);
-						}
-					});*/
+			Log.i("TR", "setupBoxes: " + colouredBoxHolder.toString());
 			
-			OnLayoutChangeListener lcl = new OnLayoutChangeListener()
-			{
-				@Override
-				public void onLayoutChange(View v, int left, int top,
-						int right, int bottom, int oldLeft, int oldTop,
-						int oldRight, int oldBottom)
-				{
-					final int HOURS_IN_DAY = LAST_HOUR - FIRST_HOUR;
-					final int width = (right - left) / (HOURS_IN_DAY + 1);
-					ColouredBoxView.layoutBoxes(context, colouredBoxHolder,
-							day, width);
-					// colouredBoxHolder.removeOnLayoutChangeListener(this);
-				}
-			};
-			colouredBoxHolder.addOnLayoutChangeListener(lcl);
-		}
-		
-		private static void layoutBoxes(Context context,
-				ViewGroup colouredBoxHolder, Day day, int width)
-		{
 			for (int hour = FIRST_HOUR; hour <= LAST_HOUR; hour++)
 			{
-				VEvent event = day.get(Day.index(hour));
-				int colour = EventManager.getColour(event);
+				ColouredBoxView box = new ColouredBoxView(context, hour);
+				// box.setBackgroundColor(Color.BLACK);
+				box.setPadding(3, 3, 3, 3);
 				
-				// TODO: actual colour and text goes here
-				View box = new ColouredBoxView(context, width, hour, colour);
 				colouredBoxHolder.addView(box);
+			}
+		}
+		
+		static void
+				formatBoxes(final ViewGroup colouredBoxHolder, final Day day)
+		{
+			for (int i = 0; i < colouredBoxHolder.getChildCount(); i++)
+			{
+				ColouredBoxView box =
+						(ColouredBoxView) colouredBoxHolder.getChildAt(i);
+				VEvent event = day.get(i);
+				int colour = EventManager.getColour(event);
+				box.setBackgroundColor(colour);
 			}
 		}
 	}

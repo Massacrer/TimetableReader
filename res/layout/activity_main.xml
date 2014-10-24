@@ -27,13 +27,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Button" />
-
-        <ProgressBar
-            android:id="@+id/syncProgress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone" />
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/syncProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/lastSync"
+        android:layout_centerHorizontal="true"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"

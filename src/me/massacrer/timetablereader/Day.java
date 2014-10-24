@@ -1,11 +1,17 @@
 package me.massacrer.timetablereader;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import android.util.Log;
 import me.massacrer.ICalParser.VEvent;
 
 public class Day implements Comparable<Day>
 {
+	private final Calendar calendar = Calendar.getInstance();
+	//DEBUG - remove
+	private final SimpleDateFormat sdf = new SimpleDateFormat(
+			"yyyy-MM-dd HH:mm:ss");
 	private final Date day;
 	// private ArrayList<VEvent> events = new ArrayList<VEvent>(
 	//		MainActivity.LAST_HOUR - MainActivity.FIRST_HOUR);
@@ -25,11 +31,12 @@ public class Day implements Comparable<Day>
 	
 	public void put(VEvent event)
 	{
-		Calendar c = Calendar.getInstance();
-		c.setTime(event.dateStart);
-		int hour = c.get(Calendar.HOUR_OF_DAY);
+		calendar.setTime(event.dateStart);
+		int hour = calendar.get(Calendar.HOUR_OF_DAY);
 		if (hour < MainActivity.FIRST_HOUR || hour > MainActivity.LAST_HOUR)
 			return;
+		//DEBUG
+		Log.i("TR", "Day.put(), i = " + index(hour) + ": " + event.toString());
 		// yay saving approx. 16 bytes of space / day
 		events[index(hour)] = event;
 	}
@@ -49,5 +56,11 @@ public class Day implements Comparable<Day>
 	public int compareTo(Day other)
 	{
 		return Long.signum(this.day.getTime() - other.day.getTime());
+	}
+	
+	public String getSummary()
+	{
+		
+		return null;
 	}
 }

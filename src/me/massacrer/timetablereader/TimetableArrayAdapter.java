@@ -1,11 +1,10 @@
 package me.massacrer.timetablereader;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import me.massacrer.ICalParser.VEvent;
-import me.massacrer.timetablereader.MainActivity.ColouredBoxView;
+import android.annotation.SuppressLint;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -18,70 +17,77 @@ public class TimetableArrayAdapter extends BaseAdapter
 	
 	Calendar calendar = Calendar.getInstance();
 	
-	public TimetableArrayAdapter(MainActivity context, List<Day> days)
+	public TimetableArrayAdapter(MainActivity context)
 	{
 		this.mainActivity = context;
-		this.days = days;
 	}
 	
-	/**
-	 * Note: commented lines at the top of this method enable view recycling,
-	 * which does not yet work properly. Disabling as a test
-	 */
+	@SuppressLint("NewApi")
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent)
 	{
-		View// row = convertView;
-		
-		//if (row == null)
-		//{
-		row =
-				mainActivity.getLayoutInflater().inflate(R.layout.day_layout,
-						null);
-		ViewHolder vh = new ViewHolder();
-		vh.colouredBoxHolder =
-				(ViewGroup) row.findViewById(R.id.colouredBoxHolder);
-		vh.dateText = (TextView) row.findViewById(R.id.dateText);
-		vh.dayText = (TextView) row.findViewById(R.id.dayText);
-		vh.summaryText = (TextView) row.findViewById(R.id.summaryText);
-		//row.setTag(vh);
-		//}
-		
-		//ViewHolder vh = (ViewHolder) row.getTag();
 		Day day = days.get(position);
+		
+		View row = convertView;
+		
+		if (row == null)
+		{
+			row =
+					mainActivity.getLayoutInflater().inflate(
+							R.layout.day_layout, null);
+			ViewHolder vh = new ViewHolder();
+			vh.colouredBoxHolder =
+					(ViewGroup) row.findViewById(R.id.colouredBoxHolder);
+			vh.dateText = (TextView) row.findViewById(R.id.dateText);
+			vh.dayText = (TextView) row.findViewById(R.id.dayText);
+			vh.summaryText = (TextView) row.findViewById(R.id.summaryText);
+			
+			MainActivity.ColouredBoxView.setupBoxes(mainActivity,
+					vh.colouredBoxHolder);
+			
+			row.setTag(vh);
+		}
+		
+		ViewHolder vh = (ViewHolder) row.getTag();
 		
 		calendar.setTime(day.getDate());
 		
-		vh.dayText.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK,
-				Calendar.SHORT, Locale.ENGLISH));
+		if (Build.VERSION.SDK_INT < 9)
+		{
+			String dayText = Util.getDisplayName(calendar);
+			vh.dayText.setText(dayText);
+		}
+		else
+		{
+			vh.dayText.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK,
+					Calendar.SHORT, Locale.ENGLISH));
+		}
 		
 		vh.dateText.setText(calendar.get(Calendar.DAY_OF_MONTH) + "/"
 				+ (calendar.get(Calendar.MONTH) + 1));
 		
-		vh.summaryText.setText(getSummary(day));
+		vh.summaryText.setText(day.getSummary());
 		
-		vh.colouredBoxHolder.setTag(Boolean.valueOf(false));
+		// vh.colouredBoxHolder.setTag(Boolean.valueOf(false));
 		
 		// row.invalidate();
 		// row.requestLayout();
 		// row.getViewTreeObserver().dispatchOnGlobalLayout();
 		
-		vh.colouredBoxHolder.removeAllViews();
-		MainActivity.ColouredBoxView.setupBoxes(mainActivity,
-				vh.colouredBoxHolder, day);
+		MainActivity.ColouredBoxView.formatBoxes(vh.colouredBoxHolder, day);
 		
-		/*row.invalidate();
+		row.invalidate();
 		row.requestLayout();
-		row.getViewTreeObserver().dispatchOnGlobalLayout();*/
+		// row.getViewTreeObserver().dispatchOnGlobalLayout();
 		
 		return row;
 	}
 	
-	private String getSummary(Day day)
-	{
-		//TODO
-		return "Summary goes here :)";
-	}
+	/**
+	 * for use on pre-api9 devices
+	 * @param calendar
+	 * @return
+	 */
 	
 	private class ViewHolder
 	{
@@ -98,7 +104,7 @@ public class TimetableArrayAdapter extends BaseAdapter
 	@Override
 	public int getCount()
 	{
-		return days.size();
+		return days == null ? 0 : days.size();
 	}
 	
 	@Override
@@ -111,5 +117,54 @@ public class TimetableArrayAdapter extends BaseAdapter
 	public long getItemId(int position)
 	{
 		return position;
+	}
+	
+	private static class Util
+	{
+		public static String getDisplayName(Calendar calendar)
+		{
+			String name;
+			switch (calendar.get(Calendar.DAY_OF_WEEK))
+			{
+				case 1:
+				{
+					name = "Sun";
+					break;
+				}
+				case 2:
+				{
+					name = "Mon";
+					break;
+				}
+				case 3:
+				{
+					name = "Tue";
+					break;
+				}
+				case 4:
+				{
+					name = "Wed";
+					break;
+				}
+				case 5:
+				{
+					name = "Thu";
+					break;
+				}
+				case 6:
+				{
+					name = "Fri";
+					break;
+				}
+				case 7:
+				{
+					name = "Sat";
+					break;
+				}
+				default:
+					name = "";
+			}
+			return name;
+		}
 	}
 }

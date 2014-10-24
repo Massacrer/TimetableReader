@@ -177,7 +177,8 @@ public class SettingsActivity extends PreferenceActivity
 	 * to reflect its new value.
 	 */
 	private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener =
-			new Preference.OnPreferenceChangeListener() {
+			new Preference.OnPreferenceChangeListener()
+			{
 				@Override
 				public boolean onPreferenceChange(Preference preference,
 						Object value)
