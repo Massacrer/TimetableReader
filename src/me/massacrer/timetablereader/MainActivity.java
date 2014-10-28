@@ -5,9 +5,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Random;
 import me.massacrer.ICalParser.*;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
@@ -16,14 +16,10 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.DataSetObserver;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -31,26 +27,15 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextPaint;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.View.OnClickListener;
-import android.view.View.OnLayoutChangeListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.SimpleAdapter;
-import android.widget.TableLayout;
-import android.widget.TableRow;
 import android.widget.TableRow.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -147,7 +132,7 @@ public class MainActivity extends Activity
 		}
 		catch (IOException e)
 		{
-			//DEBUG
+			// DEBUG
 			e.printStackTrace();
 			this.deleteFile(FILE_NAME);
 		}
@@ -184,9 +169,11 @@ public class MainActivity extends Activity
 	
 	private void updateSyncText()
 	{
+		SimpleDateFormat sdf =
+				(SimpleDateFormat) SimpleDateFormat.getDateTimeInstance();
 		((TextView) findViewById(R.id.lastSyncText)).setText("Last fetched: "
-				+ (lastSync == null ? "(not found, resync)" : lastSync
-						.toString()));
+				+ (lastSync == null ? "(not found, resync)" : sdf
+						.format(lastSync)));
 	}
 	
 	/**
@@ -331,12 +318,52 @@ public class MainActivity extends Activity
 		});
 	}
 	
-	private void setSyncingUI(boolean syncing)
+	private void setSyncingUI(final boolean syncing)
 	{
-		findViewById(R.id.syncProgress).setVisibility(
-				syncing ? View.VISIBLE : View.GONE);
-		findViewById(R.id.button1).setVisibility(
-				syncing ? View.GONE : View.VISIBLE);
+		final int delay = 500;
+		final View progress = findViewById(R.id.syncProgress);
+		final View button = findViewById(R.id.button1);
+		
+		if (syncing)
+		{
+			progress.setAlpha(0f);
+			progress.setVisibility(View.VISIBLE);
+		}
+		else
+		{
+			button.setAlpha(0f);
+			button.setVisibility(View.VISIBLE);
+			listView.setVisibility(View.VISIBLE);
+		}
+		
+		listView.animate().alpha(syncing ? 0f : 1f).setDuration(delay)
+				.withEndAction(new Runnable()
+				{
+					public void run()
+					{
+						if (syncing)
+							listView.setVisibility(View.GONE);
+					}
+				});
+		
+		progress.animate().alpha(syncing ? 1f : 0f).setDuration(delay)
+				.withEndAction(new Runnable()
+				{
+					public void run()
+					{
+						if (!syncing)
+							progress.setVisibility(View.GONE);
+					}
+				});
+		button.animate().alpha(syncing ? 0f : 1f).setDuration(delay)
+				.withEndAction(new Runnable()
+				{
+					public void run()
+					{
+						if (syncing)
+							button.setVisibility(View.GONE);
+					}
+				});
 	}
 	
 	@Override
@@ -344,7 +371,9 @@ public class MainActivity extends Activity
 	{
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		menu.add("refresh");
+		menu.add(Menu.NONE, 6, 0, "refresh");
+		// TODO: comment out for release :(
+		menu.add(Menu.NONE, 7, 0, "toggle :)");
 		return true;
 	}
 	
@@ -355,20 +384,29 @@ public class MainActivity extends Activity
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
 		int id = item.getItemId();
-		if (id == R.id.action_settings)
+		switch (id)
 		{
-			Intent settingsIntent =
-					new Intent(MainActivity.this, SettingsActivity.class);
-			MainActivity.this.startActivity(settingsIntent);
-			return true;
-		}
-		if (item.getTitle() == "refresh")
-		{
-			View root = findViewById(R.id.root);
-			root.invalidate();
-			root.requestLayout();
-			Toast.makeText(this, "refreshed", Toast.LENGTH_SHORT).show();
-			return true;
+			case R.id.action_settings:
+			{
+				Intent settingsIntent =
+						new Intent(MainActivity.this, SettingsActivity.class);
+				MainActivity.this.startActivity(settingsIntent);
+				return true;
+			}
+			case 6:
+			{
+				View root = findViewById(R.id.root);
+				root.invalidate();
+				root.requestLayout();
+				Toast.makeText(this, "refreshed", Toast.LENGTH_SHORT).show();
+				return true;
+			}
+			case 7:
+			{
+				listView.animate().alpha(1 - listView.getAlpha())
+						.setDuration(500);
+				return true;
+			}
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -389,7 +427,7 @@ public class MainActivity extends Activity
 		{
 			super(context);
 			this.hour = hour;
-			//this.colour = 0x0;
+			// this.colour = 0x0;
 			
 			paint.setTextSize(context.getResources().getDimensionPixelSize(
 					R.dimen.text_size));
@@ -397,7 +435,7 @@ public class MainActivity extends Activity
 			paint.setStyle(Style.FILL);
 			paint.setStrokeWidth(10f);
 			
-			//this.setBackgroundColor(colour);
+			// this.setBackgroundColor(colour);
 			
 			this.setLayoutParams(layoutParams);
 		}
@@ -415,13 +453,13 @@ public class MainActivity extends Activity
 		@Override
 		protected void onMeasure(int w, int h)
 		{
-			//DEBUG:
-			Log.i("TR", "onMeasure: " + MeasureSpec.getMode(w) + ": "
-					+ MeasureSpec.getSize(w) + ":" + MeasureSpec.getSize(h));
+			// DEBUG:
+			// Log.i("TR", "onMeasure: " + MeasureSpec.getMode(w) + ": "+
+			// MeasureSpec.getSize(w) + ":" + MeasureSpec.getSize(h));
 			
 			switch (MeasureSpec.getMode(w))
 			{
-				case 0://MeasureSpec.UNSPECIFIED: // case error...
+				case 0:// MeasureSpec.UNSPECIFIED: // case error...
 				{
 					setMeasuredDimension(width, width);
 					break;
@@ -468,7 +506,7 @@ public class MainActivity extends Activity
 				final ViewGroup colouredBoxHolder)
 		{
 			
-			Log.i("TR", "setupBoxes: " + colouredBoxHolder.toString());
+			// Log.i("TR", "setupBoxes: " + colouredBoxHolder.toString());
 			
 			for (int hour = FIRST_HOUR; hour <= LAST_HOUR; hour++)
 			{
@@ -534,14 +572,16 @@ public class MainActivity extends Activity
 					@Override
 					public void run()
 					{
-						MainActivity.this.setSyncingUI(false);
 						if (events == null)
 						{
 							Toast.makeText(MainActivity.this, error,
 									Toast.LENGTH_LONG).show();
-							return;
 						}
-						update(events);
+						else
+						{
+							update(events);
+						}
+						MainActivity.this.setSyncingUI(false);
 					}
 				});
 			}

@@ -29,6 +29,14 @@
             android:text="Button" />
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/lastSync"
+        android:layout_centerHorizontal="true" >
+
+    </LinearLayout>
+
     <ProgressBar
         android:id="@+id/syncProgress"
         android:layout_width="wrap_content"

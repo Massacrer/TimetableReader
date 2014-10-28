@@ -83,12 +83,6 @@ public class TimetableArrayAdapter extends BaseAdapter
 		return row;
 	}
 	
-	/**
-	 * for use on pre-api9 devices
-	 * @param calendar
-	 * @return
-	 */
-	
 	private class ViewHolder
 	{
 		public TextView dayText, dateText, summaryText;
@@ -121,6 +115,11 @@ public class TimetableArrayAdapter extends BaseAdapter
 	
 	private static class Util
 	{
+		/**
+		* for use on pre-api9 devices
+		* @param calendar
+		* @return
+		*/
 		public static String getDisplayName(Calendar calendar)
 		{
 			String name;
