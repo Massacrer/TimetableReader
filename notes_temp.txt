@@ -1,0 +1,15 @@
+change main view to week view, default focus on current week
+allow easy selection of week (dialog, include "next week", "last week", "d-d of MMM" etc)
+
+enhance EventManager
+	-allow adding, cancelling events + apply these changes intelligently onto re-synced datasets
+	-searching w/ multiple criteria (type, module, date range, time range, official (= in synced set), cancelled (manually), etc)
+
+move sync button to menu, move sync spinner below last-sync text (above list)
+
+also THE DATA ISN'T PROPERLY SYNC'D TO BACKEND. As in, their ICal generator is /*a buggy piece of shit*/flawed in many ways. ato has no discrepancies with studentrecord (that I've come across), but ICal seems to take sadistic pleasure in misreporting event times (Monday, CS211 lecture) /*or even straight-up omitting them (Friday, CS237 prac, hour 2).*/ see below
+
+What.
+
+NOTE: some events (see double prac) have dtend = dtstart+2 hours (only 1 event)
+todo: 

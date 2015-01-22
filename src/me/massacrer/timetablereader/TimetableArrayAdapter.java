@@ -26,67 +26,63 @@ public class TimetableArrayAdapter extends BaseAdapter
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent)
 	{
+		class ViewHolder
+		{
+			public TextView dayText, dateText, summaryText;
+			public ViewGroup colouredBoxHolder;
+		}
+		
 		Day day = days.get(position);
 		
 		View row = convertView;
 		
 		if (row == null)
 		{
+			// ignore lint warning about null root - we're not putting the new
+			// view into the heirarchy yet
 			row =
 					mainActivity.getLayoutInflater().inflate(
 							R.layout.day_layout, null);
+			
 			ViewHolder vh = new ViewHolder();
 			vh.colouredBoxHolder =
 					(ViewGroup) row.findViewById(R.id.colouredBoxHolder);
 			vh.dateText = (TextView) row.findViewById(R.id.dateText);
 			vh.dayText = (TextView) row.findViewById(R.id.dayText);
 			vh.summaryText = (TextView) row.findViewById(R.id.summaryText);
+			row.setTag(vh);
 			
 			MainActivity.ColouredBoxView.setupBoxes(mainActivity,
 					vh.colouredBoxHolder);
-			
-			row.setTag(vh);
 		}
 		
 		ViewHolder vh = (ViewHolder) row.getTag();
 		
 		calendar.setTime(day.getDate());
 		
+		String dayText;
 		if (Build.VERSION.SDK_INT < 9)
 		{
-			String dayText = Util.getDisplayName(calendar);
-			vh.dayText.setText(dayText);
+			dayText = Util.getDisplayName(calendar);
 		}
 		else
 		{
-			vh.dayText.setText(calendar.getDisplayName(Calendar.DAY_OF_WEEK,
-					Calendar.SHORT, Locale.ENGLISH));
+			dayText =
+					calendar.getDisplayName(Calendar.DAY_OF_WEEK,
+							Calendar.SHORT, Locale.ENGLISH);
 		}
-		
+		vh.dayText.setText(dayText);
 		vh.dateText.setText(calendar.get(Calendar.DAY_OF_MONTH) + "/"
 				+ (calendar.get(Calendar.MONTH) + 1));
-		
 		vh.summaryText.setText(day.getSummary());
 		
-		// vh.colouredBoxHolder.setTag(Boolean.valueOf(false));
+		MainActivity.ColouredBoxView.formatBoxes(vh.colouredBoxHolder, day);
 		
 		// row.invalidate();
 		// row.requestLayout();
 		// row.getViewTreeObserver().dispatchOnGlobalLayout();
 		
-		MainActivity.ColouredBoxView.formatBoxes(vh.colouredBoxHolder, day);
-		
-		row.invalidate();
-		row.requestLayout();
-		// row.getViewTreeObserver().dispatchOnGlobalLayout();
-		
 		return row;
-	}
-	
-	private class ViewHolder
-	{
-		public TextView dayText, dateText, summaryText;
-		public ViewGroup colouredBoxHolder;
 	}
 	
 	public void update(List<Day> days)
@@ -116,54 +112,32 @@ public class TimetableArrayAdapter extends BaseAdapter
 	private static class Util
 	{
 		/**
-		* for use on pre-api9 devices
-		* @param calendar
-		* @return
-		*/
+		 * for use on pre-api9 devices
+		 * 
+		 * @param calendar
+		 * @return
+		 */
 		public static String getDisplayName(Calendar calendar)
 		{
-			String name;
 			switch (calendar.get(Calendar.DAY_OF_WEEK))
 			{
 				case 1:
-				{
-					name = "Sun";
-					break;
-				}
+					return "Sun";
 				case 2:
-				{
-					name = "Mon";
-					break;
-				}
+					return "Mon";
 				case 3:
-				{
-					name = "Tue";
-					break;
-				}
+					return "Tue";
 				case 4:
-				{
-					name = "Wed";
-					break;
-				}
+					return "Wed";
 				case 5:
-				{
-					name = "Thu";
-					break;
-				}
+					return "Thu";
 				case 6:
-				{
-					name = "Fri";
-					break;
-				}
+					return "Fri";
 				case 7:
-				{
-					name = "Sat";
-					break;
-				}
+					return "Sat";
 				default:
-					name = "";
+					return "";
 			}
-			return name;
 		}
 	}
 }

@@ -23,6 +23,7 @@ import android.graphics.Paint.Style;
 import android.graphics.drawable.ShapeDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextPaint;
@@ -33,6 +34,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CalendarView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -56,7 +58,7 @@ public class MainActivity extends Activity
 	private EventManager eventManager;
 	// private ArrayList<VEvent> events = new ArrayList<VEvent>();
 	
-	private ListView listView;
+	private ListView mainList;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -78,6 +80,15 @@ public class MainActivity extends Activity
 		updateAdapter();
 	}
 	
+	private void getNewData()
+	{
+		SharedPreferences prefs =
+				PreferenceManager
+						.getDefaultSharedPreferences(MainActivity.this);
+		String userUrl = prefs.getString("userUrl", "");
+		refreshEventsList(this.makeURL(userUrl));
+	}
+	
 	private void setupSyncButton()
 	{
 		Button button = ((Button) findViewById(R.id.button1));
@@ -87,27 +98,16 @@ public class MainActivity extends Activity
 			@Override
 			public void onClick(View v)
 			{
-				SharedPreferences prefs =
-						PreferenceManager
-								.getDefaultSharedPreferences(MainActivity.this);
-				String userUrl = prefs.getString("userUrl", "");
-				MainActivity.this.refreshEventsList(MainActivity.this
-						.makeURL(userUrl));
+				getNewData();
 			}
 		});
 	}
 	
 	private void setupListView()
 	{
-		listView = new ListView(this);
-		RelativeLayout.LayoutParams rlp =
-				new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT,
-						LayoutParams.MATCH_PARENT);
-		rlp.addRule(RelativeLayout.BELOW, R.id.lastSync);
-		listView.setLayoutParams(rlp);
-		listView.setAdapter(new TimetableArrayAdapter(this));
+		mainList = (ListView) findViewById(R.id.mainListView);
+		mainList.setAdapter(new TimetableArrayAdapter(this));
 		updateAdapter();
-		((ViewGroup) findViewById(R.id.root)).addView(listView);
 	}
 	
 	private void readSavedEvents()
@@ -195,7 +195,7 @@ public class MainActivity extends Activity
 	private void updateAdapter()
 	{
 		TimetableArrayAdapter adapter =
-				((TimetableArrayAdapter) listView.getAdapter());
+				((TimetableArrayAdapter) mainList.getAdapter());
 		
 		adapter.update(eventManager
 		/*.getWeek(new Date()));*/.getAllEventsByDay());
@@ -269,39 +269,6 @@ public class MainActivity extends Activity
 		bar.addTab(bar.newTab().setText("Tab 2").setTabListener(tabListener));
 	}
 	
-	/*private void setupTimetableViews()
-	{
-		// get holder layout
-		TableLayout holder = (TableLayout) findViewById(R.id.timetableHolder);
-		TableRow topRow = (TableRow) findViewById(R.id.timetableTopRow);
-		// add blank view @ top left
-		topRow.addView(new View(this));
-		
-		TableRow.LayoutParams layoutParams =
-				new LayoutParams(LayoutParams.MATCH_PARENT,
-						LayoutParams.WRAP_CONTENT);
-		
-		// add cells in top row
-		// hours in the day - first 0900, last 1700
-		for (int i = 9; i <= 17; i++)
-		{
-			TextView text = new TextView(this);
-			String timeStart =
-					(i == 9 ? "0" : "") + i + ":" + ((i < 11) ? "00" : "10");
-			String timeEnd =
-					"" + (i == 9 ? "0" : "")
-							+ (i < 11 ? i + ":50" : i + 1 + "00");
-			text.setText(timeStart + "\t" + timeEnd );
-			text.setHorizontallyScrolling(false);
-			// text.setInputType(InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-			// text.setSingleLine(false);
-			text.setGravity(Gravity.CENTER_HORIZONTAL);
-			text.setLayoutParams(layoutParams);
-			
-			topRow.addView(text);
-		}
-	}*/
-	
 	private void setupButton()
 	{
 		Button button = (Button) this.findViewById(R.id.button1);
@@ -320,6 +287,25 @@ public class MainActivity extends Activity
 	
 	private void setSyncingUI(final boolean syncing)
 	{
+		
+		class Animator implements Runnable
+		{
+			private final boolean animate;
+			private final View view;
+			
+			public Animator(boolean animate, View view)
+			{
+				this.animate = animate;
+				this.view = view;
+			}
+			
+			public void run()
+			{
+				if (animate)
+					view.setVisibility(View.GONE);
+			}
+		}
+		
 		final int delay = 500;
 		final View progress = findViewById(R.id.syncProgress);
 		final View button = findViewById(R.id.button1);
@@ -333,37 +319,16 @@ public class MainActivity extends Activity
 		{
 			button.setAlpha(0f);
 			button.setVisibility(View.VISIBLE);
-			listView.setVisibility(View.VISIBLE);
+			mainList.setAlpha(0f);
+			mainList.setVisibility(View.VISIBLE);
 		}
 		
-		listView.animate().alpha(syncing ? 0f : 1f).setDuration(delay)
-				.withEndAction(new Runnable()
-				{
-					public void run()
-					{
-						if (syncing)
-							listView.setVisibility(View.GONE);
-					}
-				});
-		
+		mainList.animate().alpha(syncing ? 0f : 1f).setDuration(delay)
+				.withEndAction(new Animator(syncing, mainList));
 		progress.animate().alpha(syncing ? 1f : 0f).setDuration(delay)
-				.withEndAction(new Runnable()
-				{
-					public void run()
-					{
-						if (!syncing)
-							progress.setVisibility(View.GONE);
-					}
-				});
+				.withEndAction(new Animator(!syncing, progress));
 		button.animate().alpha(syncing ? 0f : 1f).setDuration(delay)
-				.withEndAction(new Runnable()
-				{
-					public void run()
-					{
-						if (syncing)
-							button.setVisibility(View.GONE);
-					}
-				});
+				.withEndAction(new Animator(syncing, mainList));
 	}
 	
 	@Override
@@ -374,6 +339,8 @@ public class MainActivity extends Activity
 		menu.add(Menu.NONE, 6, 0, "refresh");
 		// TODO: comment out for release :(
 		menu.add(Menu.NONE, 7, 0, "toggle :)");
+		menu.add(0, 8, 0, "temp day");
+		menu.add(0, 9, 0, "newmain");
 		return true;
 	}
 	
@@ -403,8 +370,26 @@ public class MainActivity extends Activity
 			}
 			case 7:
 			{
-				listView.animate().alpha(1 - listView.getAlpha())
+				mainList.animate().alpha(1 - mainList.getAlpha())
 						.setDuration(500);
+				return true;
+			}
+			case 8:
+			{
+				Intent intent = new Intent(this, DayViewActivity.class);
+				intent.putExtra("date", new Date());
+				startActivity(intent);
+				return true;
+			}
+			case 9:
+			{
+				Intent intent = new Intent(this, NewMain.class);
+				startActivity(intent);
+				return true;
+			}
+			case R.id.reloadButton:
+			{
+				getNewData();
 				return true;
 			}
 		}

@@ -29,19 +29,30 @@
             android:text="Button" />
     </LinearLayout>
 
-    <LinearLayout
+    <ListView
+        android:id="@+id/mainListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/lastSync" >
+
+    </ListView>
+
+   <LinearLayout
+        android:id="@+id/weekPicker"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/lastSync"
-        android:layout_centerHorizontal="true" >
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal" >
+
 
     </LinearLayout>
 
     <ProgressBar
         android:id="@+id/syncProgress"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/lastSync"
+        android:layout_below="@id/weekPicker"
         android:layout_centerHorizontal="true"
         android:visibility="gone" />
 

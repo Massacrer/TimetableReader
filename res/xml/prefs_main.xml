@@ -5,7 +5,8 @@
     <CheckBoxPreference android:title="Check1" android:key="check1_temp"/>
     <PreferenceCategory android:title="Category1" android:summary="this is a category" android:key="prefCat1">
         <EditTextPreference android:title="Child EditText" android:key="cat1_edittext" android:summary="something"/>
-    </PreferenceCategory>
+        
+    </PreferenceCategory><CheckBoxPreference android:key="show_weekends" android:title="Show Weekends" />
     
 
 </PreferenceScreen>
